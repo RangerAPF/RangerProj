@@ -1,17 +1,23 @@
 ;; The first three lines of this file were inserted by DrRacket. They record metadata
 ;; about the language level of this file in a form that our tools can easily process.
-#reader(lib "htdp-advanced-reader.ss" "lang")((modname |Computer Science Final Project|) (read-case-sensitive #t) (teachpacks ((lib "image.rkt" "teachpack" "2htdp") (lib "universe.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ((lib "image.rkt" "teachpack" "2htdp") (lib "universe.rkt" "teachpack" "2htdp")) #f)))
-;Final Project: Key-Master
+;;#reader(lib "htdp-advanced-reader.ss" "lang")((modname |Computer Science Final Project|) (read-case-sensitive #t) (teachpacks ((lib "image.rkt" "teachpack" "2htdp") (lib "universe.rkt" "teachpack" "2htdp"))) (htdp-settings #(#t constructor repeating-decimal #t #t none #f ((lib "image.rkt" "teachpack" "2htdp") (lib "universe.rkt" "teachpack" "2htdp")) #f)))
 
-;Height of the background
-;Width of the background
-;Background color
+;Game: Key-Master. Try to type out all the letters shown on the screen before time runs out to score points. If the timer runs out or you make too many mistakes, the game ends.
+
+
+;Height, width, and color of the background
 (define HEIGHT 1000)
 (define WIDTH 1500)
 (define BGCOLOR "black")
+
+;Scores depending on whether you correctly or incorrectly typed the letter
 (define SCORE+ 5)
 (define SCORE- 25)
+
+;Maxiumum number of mistypes before the game ends
 (define MISTYPE-MAX 10)
+
+;The scores which determine the ending message
 (define POOR-SCORE 2000)
 (define DECENT-SCORE 2500)
 (define GOOD-SCORE 3000)
@@ -26,18 +32,13 @@
 ;Short line under the current letter
 (define SHORT-LINE (rectangle 16 1 "solid" "yellow"))
 
-
-;STARTINGTIME: The amount of time to type in the first level
+;STARTINGTIME: The amount of time you have to finish typing all the letters in the first level
 (define STARTING-TIME 60)
 
-;MAX-MISTAKES: The maxiumum number of mistakes the player can make before game over
-(define MAX-MISTAKES 10)
-
-
-;UP2: List of the Uppercase Letters
+;UP: List of the Uppercase Letters
 (define UP (list "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z"))
 
-;LP2: List of the Lowercase Letters
+;LP: List of the Lowercase Letters
 (define LC (list "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v" "w" "x" "y" "z"))
 
 ;WORD-POOL: List of the pool of words drawn upon for the game
@@ -114,14 +115,14 @@
   )
 
 ;random-element-generator: (List->ElementOfList)
- ;Provides a list and random number to generate a random element from nth-element
+ ;Plugs a list and random number into the nth-element function to get a random element from the list
 (define random-element-generator
   (lambda [lst]
     (nth-element lst (random 1 57))))
 
 
 ;random-list-generator: (List X Number -> List)
-  ;Generates a list of given length made up of randomly pulled elements from another list
+  ;Generates a list of a given length made of randomly pulled elements from another list. The elements are randomly found using the random-element-generator function above
     ;n: the number of elements in the list
     ;l: the list of elements one wishes to pull from to construct the new randomized list
 (define random-list-generator
@@ -151,8 +152,9 @@
   )
 
 ;word-combiner (ListOf(String)->ListOf(String))
-  ;Takes a list of words generated from random-list-generator, gets a list of strings of letters through word-to-char and char-to-string, and combines all the
-  ;lists of letters into one long list of strings of letters
+  ;Takes a list of words generated from random-list-generator, breaks down each word into a list of characters using the word-to-char function above, converts the list of characters into a list of strings
+  ; (each string being an individual letter from a word) and combines the list of strings into one long list of strings (of letters). This yields a list of individual strings (which are essentially all the
+  ; letters of the words spelled in order) which can be displayed on the screen and removed as the user types each one.
 (define word-combiner
   (lambda [l]
     (cond
@@ -173,13 +175,13 @@
 
 ;init-WS: The initial worldstate of the game
 (define init-WS
-  (make-WS 0 0 40 (word-combiner (random-list-generator 14 WORD-POOL)) 1))
+  (make-WS 0 0 STARTING-TIME (word-combiner (random-list-generator 14 WORD-POOL)) 1))
 
 ;timer-Changer (WS->Number)
    ;Accepts the current level number from tock and subtracts 10 times that number from your starting time for the next level
 (define timer-changer
-  (lambda [b]
-    (- 40 (* 5 b))
+  (lambda [ws]
+    (- STARTING-TIME (* 5 ws))
     )
   )
 
@@ -198,7 +200,7 @@
 
 
 ;draw-letters: (WS->Image)
-;Draws the list of letters from WS-lol over a line
+;Draws the list of letters from WS-lol over LINE
 (define draw-letters
   (lambda [lol]
     (cond
@@ -268,7 +270,8 @@
   )
    
 ;key-hander: (Key-Input X WS -> WS)
-   ;Checks whether the key pressed by the user matches the first of the list of letters given; if it does, it adds to the score and removes it from the list; if it does not match it adds to the mistypes
+   ;Checks whether the key pressed by the user matches the first letter in the list of letters given. If it does, the function adds to the player's score and removes the letter from the list
+   ;If the letter pressed does not match the first letter of the list a mystype is added to the mistype count and the letters on the screen remain the same
 (define key-handler
   (lambda [ws a-key]
     (cond
@@ -281,7 +284,7 @@
     )
   )
 
-;game-end: (WS->WS)
+;Game-end: (WS->WS)
    ;Checks to see whether the mistype max has been reached or the timer has run out; if either is true, the game ends with the last picture function.
 (define game-end
   (lambda [ws]
@@ -294,8 +297,8 @@
   )
 
 
-;last-pictures: (WS->WS)
-   ;Displays the score, the level, and (depending on the score) a varying message
+;last-picture: (WS->WS)
+   ;When the game ends this function displays the score, the level, and a message whose contents depends on the score.
 (define last-picture
   (lambda [ws]
     (cond
